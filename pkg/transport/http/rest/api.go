@@ -61,6 +61,17 @@ func (a *API) setUpServerHandler() http.Handler {
 		MaxAge:           300,
 	}))
 
+	mux.Mount("/health", HealthRoutes())
+
+	mux.Mount("/wedding", a.WeddingRoutes())
+
+	mux.Mount("/admin-auth", a.AdminAuthRoutes())
+	mux.Mount("/staff-auth", a.StaffAuthRoutes())
+	mux.Mount("/external-auth", a.ExternalAuthRoutes())
+
+	mux.Mount("/admin", a.AdminRoutes())
+	mux.Mount("/staff", a.StaffRoutes())
+
 	return mux
 }
 

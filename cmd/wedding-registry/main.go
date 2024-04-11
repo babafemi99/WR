@@ -1,1 +1,1 @@
-package wedding_registry
+package main

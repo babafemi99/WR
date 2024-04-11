@@ -31,3 +31,10 @@ func New(cfg *config.Config) *DB {
 	}
 	return d
 }
+
+func (d *DB) Close() error {
+	if d.Pool != nil {
+		d.Pool.Close()
+	}
+	return nil
+}
