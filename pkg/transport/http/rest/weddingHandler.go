@@ -8,14 +8,12 @@ import (
 	"github.com/go-chi/chi/v5"
 	"net/http"
 	"strconv"
-	"time"
 )
 
 func (a *API) WeddingRoutes() chi.Router {
 	weddingRouter := chi.NewRouter()
 
 	weddingRouter.Method(http.MethodPost, "/{wid}", Handler(a.JoinWeddingMeeting))
-	weddingRouter.Method(http.MethodPost, "/create", Handler(a.LoadWeddingDetails))
 	weddingRouter.Method(http.MethodPost, "/add-member", Handler(a.AddMember))
 	weddingRouter.Method(http.MethodGet, "/{wid}/members", Handler(a.GetAllMembers))
 	weddingRouter.Method(http.MethodDelete, "/{wid}/{email}", Handler(a.RemoveMember))
@@ -38,7 +36,6 @@ func (a *API) JoinWeddingMeeting(_ http.ResponseWriter, r *http.Request) *Server
 
 	// send response
 	return &ServerResponse{
-		Err:        nil,
 		Message:    message,
 		Status:     status,
 		StatusCode: util.StatusCode(status),
@@ -54,11 +51,8 @@ func (a *API) LoadWeddingDetails(_ http.ResponseWriter, r *http.Request) *Server
 		return respondWithError(err, "invalid request body provided", values.BadRequestBody)
 	}
 
-	// generate weeding key
-	newWeddingReq.Link = util.GenerateSpecialKey(newWeddingReq.WeddingId)
-	newWeddingReq.CreatedAt = time.Now()
 	// persist in db
-	status, message, err := a.DoPersistWedding()
+	_, status, message, err := a.DoPersistWedding(newWeddingReq)
 	if err != nil {
 		return respondWithError(err, message, status)
 	}
@@ -88,7 +82,6 @@ func (a *API) AddMember(_ http.ResponseWriter, r *http.Request) *ServerResponse 
 	}
 
 	return &ServerResponse{
-		Err:        nil,
 		Message:    message,
 		Status:     status,
 		StatusCode: util.StatusCode(status),
@@ -123,7 +116,6 @@ func (a *API) GetAllMembers(_ http.ResponseWriter, r *http.Request) *ServerRespo
 	}
 	//todo handle error no rows
 	return &ServerResponse{
-		Err:        nil,
 		Message:    "fetched members successfully",
 		Status:     values.Success,
 		StatusCode: util.StatusCode(values.Success),
@@ -132,7 +124,7 @@ func (a *API) GetAllMembers(_ http.ResponseWriter, r *http.Request) *ServerRespo
 }
 
 func (a *API) RemoveMember(_ http.ResponseWriter, r *http.Request) *ServerResponse {
-	// get email and wedding Id from url
+	// get email and wedding id from url
 
 	wID := chi.URLParam(r, "wid")
 	if wID == "" {
@@ -152,7 +144,6 @@ func (a *API) RemoveMember(_ http.ResponseWriter, r *http.Request) *ServerRespon
 	}
 
 	return &ServerResponse{
-		Err:        nil,
 		Message:    "removed member successfully",
 		Status:     values.Success,
 		StatusCode: util.StatusCode(values.Success),

@@ -47,23 +47,26 @@ func (r Repository) RunInTx(ctx context.Context, fn func() error) error {
 
 // WEDDING
 
-func (r Repository) PersistWedding() (string, string, error) {
+func (r Repository) PersistWedding(req model.NewWeddingReq) error {
 	panic("implement me ")
 }
 
-func (r Repository) ToggleWeddingLink(key string) error {
+func (r Repository) ToggleWeddingLink(req model.ToggleWeddingReq) error {
+	panic("implement me ")
+}
+func (r Repository) ToggleWeddingLinkOff(id string) error {
 	panic("implement me ")
 }
 
-func (r Repository) GetLinkByKey(key string) (model.Wedding, error) {
-	panic("implement me ")
-}
+func (r Repository) GetLinkByKey(key string) (model.Wedding, error) { panic("implement me ") }
 
 func (r Repository) IdExists(id string) (bool, error) { panic("implement me") }
 
 func (r Repository) IdToday(id string) (bool, error) { panic("implement me") }
 
 func (r Repository) AddMembers(req model.Member) error { panic("implement me") }
+
+func (r Repository) MemberExist(req model.Member) (bool, error) { panic("implement me") }
 
 func (r Repository) GetMembers(id string, offset, limit int) ([]model.Member, error) {
 	panic("implement me")
@@ -90,6 +93,10 @@ func (r Repository) PersistStaff(staff model.Staff) error {
 }
 
 func (r Repository) FindAdminByEmail(email string) (model.Admin, error) {
+	panic("implement me")
+}
+
+func (r Repository) FindSuperAdminByEmail(email string) (model.Admin, error) {
 	panic("implement me")
 }
 
@@ -126,4 +133,8 @@ func (r Repository) UpdateStaffPassword(id string, password string) error {
 }
 func (r Repository) UpdateAdminPassword(id string, password string) error {
 	panic("implement me ")
+}
+
+func (r Repository) GetWeddingById(id string) (*model.Wedding, error) {
+	panic("implement me")
 }

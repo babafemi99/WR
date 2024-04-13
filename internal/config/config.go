@@ -6,6 +6,7 @@ const (
 
 type Config struct {
 	DataBaseUrl string `json:"data_base_url"`
+	RedisURL    string
 	ServiceName string
 	Port        int8
 }

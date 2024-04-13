@@ -41,3 +41,13 @@ type AdminAuthRes struct {
 	Admin *Admin    `json:"admin"`
 	Auth  TokenInfo `json:"auth"`
 }
+
+type RefreshToken struct {
+	RefreshToken string `json:"refresh_token"`
+}
+
+type Executor struct {
+	Id    string `json:"id"`
+	Email string `json:"email"`
+	Role  string `json:"role"`
+}

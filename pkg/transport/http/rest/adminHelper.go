@@ -3,6 +3,7 @@ package rest
 import (
 	"context"
 	"errors"
+	"fmt"
 	"github.com/babafemi99/WR/internal/util"
 	"github.com/babafemi99/WR/internal/values"
 	"github.com/babafemi99/WR/pkg/model"
@@ -17,7 +18,7 @@ func (a *API) DoPersistAdmin(admin model.Admin) (*model.Admin, string, string, e
 	// verify admin body
 
 	// check if email already exists
-	exist, err := a.Deps.EmailExist(admin.Email, admin.Role)
+	exist, err := a.Deps.Repository.EmailExist(admin.Email, admin.Role)
 	if exist {
 		return nil, values.Conflict, "admin with this email already exist", errors.New("duplicate resource")
 	}
@@ -42,7 +43,7 @@ func (a *API) DoPersistAdmin(admin model.Admin) (*model.Admin, string, string, e
 			return err
 		}
 
-		err = a.Deps.PersistAdmin(admin)
+		err = a.Deps.Repository.PersistAdmin(admin)
 		if err != nil {
 			message = "unable add new admin"
 			status = values.Error
@@ -61,7 +62,6 @@ func (a *API) DoPersistAdmin(admin model.Admin) (*model.Admin, string, string, e
 }
 
 func (a *API) DoAdminLogin(req model.LoginReq) (*model.AdminAuthRes, string, string, error) {
-
 	// validate req
 
 	// fetch user with that email
@@ -78,15 +78,19 @@ func (a *API) DoAdminLogin(req model.LoginReq) (*model.AdminAuthRes, string, str
 	}
 
 	// createToken
+	_, tokenArr, status, message, err := a.CreateAuthToken(user.Email, user.Id.String(), user.Role)
+	if err != nil {
+		return nil, status, message, err
+	}
 
 	// return response
 	return &model.AdminAuthRes{
 		Admin: &user,
 		Auth: model.TokenInfo{
-			Token:                  "",
-			TokenExpiryTime:        time.Time{},
-			RefreshToken:           "",
-			RefreshTokenExpiryTime: time.Time{},
+			Token: tokenArr[0],
+			//TokenExpiryTime:        time.Time{},
+			//RefreshTokenExpiryTime: time.Time{},
+			RefreshToken: tokenArr[2],
 		},
 	}, values.Success, "log in successful", nil
 }
@@ -117,7 +121,6 @@ func (a *API) DeleteAdmin(id string) (string, string, error) {
 	return values.Success, "blocked staff successfully", nil
 }
 
-// script
 func (a *API) ImportWeddingDetails() (string, string, error) {
 	//write script that will consumeAPI generate uniqueId for wedding and then store data in the database
 	return "", "", nil
@@ -159,4 +162,43 @@ func (a *API) UpdateAdminPassword(req model.UpdatePasswordReq) (string, string, 
 	}
 
 	return values.Success, "updated password successfully", nil
+}
+
+func (a *API) DoAdminRefreshToken(refreshToken string) (*model.RefreshTokenRes, string, string, error) {
+	// get token details
+	cClaims, err := util.ParseToken(refreshToken)
+	if err != nil {
+		return nil, values.NotAuthorised, "invalid refresh token", err
+	}
+
+	// get the session connected to refresh token
+
+	AuthSession, err := a.Deps.Redis.GetRefreshSession(context.TODO(), cClaims.Role, cClaims.Subject, refreshToken)
+	if err != nil {
+		return nil, values.Error, "failed to get session", err
+	}
+
+	// delete that session
+	err = a.Deps.Redis.DeleteAuthSession(context.TODO(), []string{fmt.Sprintf("ref-%s-%s-%s", cClaims.Role, cClaims.Subject, refreshToken)})
+	if err != nil {
+		return nil, values.Error, "failed to delete session", err
+	}
+
+	// check if sessionID is the same
+	if cClaims.SessionId != AuthSession.SessionId {
+		return nil, values.NotAuthorised, "invalid session Id", errors.New("user is logged in somewhere else")
+	}
+
+	// create new auth session
+	_, token, status, message, err := a.CreateAuthToken(cClaims.Email, cClaims.Subject, cClaims.Role)
+	if err != nil {
+		return nil, status, message, err
+	}
+
+	refreshRes := &model.RefreshTokenRes{
+		AccessToken:  token[0],
+		RefreshToken: token[1],
+	}
+
+	return refreshRes, values.Success, "Authentication token reset successfully", nil
 }

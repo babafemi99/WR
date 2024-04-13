@@ -4,16 +4,17 @@ import "time"
 
 // Wedding Struct represents a wedding and all other related functionalities
 type Wedding struct {
-	Id         string    `json:"id"`
-	CoupleName string    `json:"couple_name"`
-	Location   string    `json:"location"`
-	Screen     int8      `json:"screen"`
-	Live       bool      `json:"live"`
-	Link       string    `json:"link"`
-	WeddingId  string    `json:"wedding_id"`
-	CreatedAt  time.Time `json:"created_at"`
-	ModifiedAt time.Time `json:"modified_at"`
-	ModifiedBy string    `json:"modified_by"`
+	Id          string    `json:"id"`
+	CoupleName  string    `json:"couple_name"`
+	Location    string    `json:"location"`
+	Screen      int8      `json:"screen"`
+	Live        bool      `json:"live"`
+	Link        string    `json:"link"`
+	WeddingId   string    `json:"wedding_id"`
+	WeddingDate time.Time `json:"wedding_date"`
+	CreatedAt   time.Time `json:"created_at"`
+	ModifiedAt  time.Time `json:"modified_at"`
+	ModifiedBy  string    `json:"modified_by"`
 }
 
 func (w Wedding) GetLink() string {

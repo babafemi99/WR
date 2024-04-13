@@ -11,6 +11,7 @@ import (
 
 func (a *API) StaffRoutes() chi.Router {
 	r := chi.NewRouter()
+	r.Use(a.AuthenticateStaff)
 
 	r.Method(http.MethodPost, "settings/staff/change-password/{id}", Handler(a.ChangePasswordStaff))
 	r.Method(http.MethodPost, "/live/{id}", Handler(a.ToggleWeddingLive))
@@ -32,7 +33,6 @@ func (a *API) ChangePasswordStaff(_ http.ResponseWriter, r *http.Request) *Serve
 	}
 
 	return &ServerResponse{
-		Err:        nil,
 		Message:    message,
 		Status:     status,
 		StatusCode: util.StatusCode(status),
@@ -62,7 +62,6 @@ func (a *API) ToggleWeddingLive(_ http.ResponseWriter, r *http.Request) *ServerR
 	}
 
 	return &ServerResponse{
-		Err:        nil,
 		Message:    message,
 		Status:     status,
 		StatusCode: util.StatusCode(status),
@@ -80,7 +79,6 @@ func (a *API) OffWedding(_ http.ResponseWriter, r *http.Request) *ServerResponse
 	}
 
 	return &ServerResponse{
-		Err:        nil,
 		Message:    message,
 		Status:     status,
 		StatusCode: util.StatusCode(status),

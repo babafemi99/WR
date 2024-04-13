@@ -11,30 +11,29 @@ import (
 
 func (a *API) AdminRoutes() chi.Router {
 	r := chi.NewMux()
+	adminRoutes := r.With(AuthenticateAdmin)
+	superAdminRoutes := r.With(AuthenticateSuperAdmin)
 
-	r.Method(http.MethodPost, "/settings/admin", Handler(a.CreateAdmin))
-	r.Method(http.MethodPost, "/settings/staff", Handler(a.CreateStaff))
-	//create entities -- todo
-
-	r.Method(http.MethodPatch, "settings/admin/block/{id}", Handler(a.BlockAdmin))
-	r.Method(http.MethodPatch, "settings/staff/block/{id}", Handler(a.BlockStaff))
-	// block entities --todo
-
-	//delete entities --todo
-	r.Method(http.MethodDelete, "settings/admin/delete/{id}", Handler(a.RemoveAdmin))
-	r.Method(http.MethodDelete, "settings/staff/delete/{id}", Handler(a.RemoveStaff))
-
-	// this enables a super admin to change their other admin and staff password
-	r.Method(http.MethodPatch, "settings/staff/update-password/{id}", Handler(a.SuperModifyStaffPassword))
-	r.Method(http.MethodPatch, "settings/admin/update-password/{id}", Handler(a.SuperModifyAdminPassword))
-
-	// this enables a normal admin to change their password credentials
-	r.Method(http.MethodPatch, "settings/admin/change-password/{id}", Handler(a.ChangePasswordAdmin))
-
+	adminRoutes.Method(http.MethodPatch, "settings/admin/change-password/{id}", Handler(a.ChangePasswordAdmin))
+	adminRoutes.Method(http.MethodPatch, "settings/staff/block/{id}", Handler(a.BlockStaff))
+	adminRoutes.Method(http.MethodPost, "/create", Handler(a.LoadWeddingDetails))
 	//change staff details
 	// change admin details
-
 	// load wedding details
+
+	superAdminRoutes.Method(http.MethodPost, "/settings/admin", Handler(a.CreateAdmin))
+	superAdminRoutes.Method(http.MethodPost, "/settings/staff", Handler(a.CreateStaff))
+	superAdminRoutes.Method(http.MethodPatch, "settings/admin/block/{id}", Handler(a.BlockAdmin))
+	superAdminRoutes.Method(http.MethodDelete, "settings/admin/delete/{id}", Handler(a.RemoveAdmin))
+	superAdminRoutes.Method(http.MethodDelete, "settings/staff/delete/{id}", Handler(a.RemoveStaff))
+
+	// this enables a super admin to change their other admin and staff password
+	superAdminRoutes.Method(http.MethodPatch, "settings/staff/update-password/{id}", Handler(a.SuperModifyStaffPassword))
+	superAdminRoutes.Method(http.MethodPatch, "settings/admin/update-password/{id}", Handler(a.SuperModifyAdminPassword))
+
+	//create entities -- todo
+	// block entities --todo
+	//delete entities --todo
 
 	return r
 }
@@ -53,7 +52,6 @@ func (a *API) CreateAdmin(_ http.ResponseWriter, r *http.Request) *ServerRespons
 	}
 
 	return &ServerResponse{
-		Err:        nil,
 		Message:    message,
 		Status:     status,
 		StatusCode: util.StatusCode(status),
@@ -76,7 +74,6 @@ func (a *API) CreateStaff(_ http.ResponseWriter, r *http.Request) *ServerRespons
 	}
 
 	return &ServerResponse{
-		Err:        nil,
 		Message:    message,
 		Status:     status,
 		StatusCode: util.StatusCode(status),
@@ -96,7 +93,6 @@ func (a *API) BlockAdmin(_ http.ResponseWriter, r *http.Request) *ServerResponse
 	}
 
 	return &ServerResponse{
-		Err:        nil,
 		Message:    message,
 		Status:     status,
 		StatusCode: util.StatusCode(status),
@@ -115,7 +111,6 @@ func (a *API) BlockStaff(_ http.ResponseWriter, r *http.Request) *ServerResponse
 	}
 
 	return &ServerResponse{
-		Err:        nil,
 		Message:    message,
 		Status:     status,
 		StatusCode: util.StatusCode(status),
@@ -134,7 +129,6 @@ func (a *API) RemoveAdmin(_ http.ResponseWriter, r *http.Request) *ServerRespons
 	}
 
 	return &ServerResponse{
-		Err:        nil,
 		Message:    message,
 		Status:     status,
 		StatusCode: util.StatusCode(status),
@@ -153,7 +147,6 @@ func (a *API) RemoveStaff(_ http.ResponseWriter, r *http.Request) *ServerRespons
 	}
 
 	return &ServerResponse{
-		Err:        nil,
 		Message:    message,
 		Status:     status,
 		StatusCode: util.StatusCode(status),
@@ -173,7 +166,6 @@ func (a *API) SuperModifyStaffPassword(_ http.ResponseWriter, r *http.Request) *
 	}
 
 	return &ServerResponse{
-		Err:        nil,
 		Message:    message,
 		Status:     status,
 		StatusCode: util.StatusCode(status),
@@ -193,7 +185,6 @@ func (a *API) SuperModifyAdminPassword(_ http.ResponseWriter, r *http.Request) *
 	}
 
 	return &ServerResponse{
-		Err:        nil,
 		Message:    message,
 		Status:     status,
 		StatusCode: util.StatusCode(status),
@@ -213,7 +204,6 @@ func (a *API) ChangePasswordAdmin(_ http.ResponseWriter, r *http.Request) *Serve
 	}
 
 	return &ServerResponse{
-		Err:        nil,
 		Message:    message,
 		Status:     status,
 		StatusCode: util.StatusCode(status),

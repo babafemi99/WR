@@ -15,7 +15,7 @@ import (
 
 func (a *API) DoPersistStaff(staff model.Staff) (*model.Staff, string, string, error) {
 	// check if email already exists
-	exist, err := a.Deps.EmailExist(staff.Email, staff.Role)
+	exist, err := a.Deps.Repository.EmailExist(staff.Email, staff.Role)
 	if exist {
 		return nil, values.Conflict, "staff with this email already exist", errors.New("duplicate resource")
 	}
@@ -40,7 +40,7 @@ func (a *API) DoPersistStaff(staff model.Staff) (*model.Staff, string, string, e
 			return err
 		}
 
-		err = a.Deps.PersistStaff(staff)
+		err = a.Deps.Repository.PersistStaff(staff)
 		if err != nil {
 			message = "unable add new staff"
 			status = values.Error
@@ -74,15 +74,17 @@ func (a *API) DoStaffLogin(req model.LoginReq) (*model.AuthStaff, string, string
 	}
 
 	// createToken
+	_, token, status, message, err := a.CreateAuthToken(user.Email, user.Id.String(), user.Role)
+	if err != nil {
+		return nil, status, message, err
+	}
 
 	// return response
 	return &model.AuthStaff{
 		Staff: &user,
 		Auth: model.TokenInfo{
-			Token:                  "",
-			TokenExpiryTime:        time.Time{},
-			RefreshToken:           "",
-			RefreshTokenExpiryTime: time.Time{},
+			Token:        token[0],
+			RefreshToken: token[1],
 		},
 	}, values.Success, "log in successful", nil
 }

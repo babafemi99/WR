@@ -34,3 +34,8 @@ type UpdatePasswordReq struct {
 	Password string
 	UserID   string // later get this from token
 }
+
+type RefreshTokenRes struct {
+	AccessToken  string `json:"access_token"`
+	RefreshToken string `json:"refresh_token"`
+}

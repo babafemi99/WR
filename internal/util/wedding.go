@@ -4,6 +4,7 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"strings"
+	"time"
 )
 
 func GenerateSpecialKey(ID string) string {
@@ -41,4 +42,16 @@ func insertDashEveryN(str string, n int) string {
 	}
 	parts = append(parts, str)
 	return strings.Join(parts, "-")
+}
+
+// IsSameDayWithToday checks if the weeding date is the current date
+func IsSameDayWithToday(t1 time.Time) bool {
+	t2 := time.Now()
+	return t1.Year() == t2.Year() && t1.Month() == t2.Month() && t1.Day() == t2.Day()
+}
+
+// IsBeforeToday checks if a wedding date is before the current date
+func IsBeforeToday(t1 time.Time) bool {
+	t2 := time.Now()
+	return t1.Before(t2) && !IsSameDayWithToday(t1)
 }
