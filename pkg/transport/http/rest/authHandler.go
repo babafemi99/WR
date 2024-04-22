@@ -17,7 +17,6 @@ func (a *API) SuperAdminRoutes() chi.Router {
 
 func (a *API) AdminAuthRoutes() chi.Router {
 	r := chi.NewRouter()
-	//r.Use(RequestTracing)
 
 	r.Method(http.MethodPost, "/sign-in", Handler(a.AdminSignIn))
 	r.Method(http.MethodPost, "/refresh-token", Handler(a.AdminRefreshToken))
@@ -43,9 +42,9 @@ func (a *API) AdminSignIn(_ http.ResponseWriter, r *http.Request) *ServerRespons
 		return respondWithError(err, "invalid request body provided", values.BadRequestBody)
 	}
 
-	admin, status, message, err := a.DoAdminLogin(newReq)
+	admin, status, message, err := a.DoAdminLogin(r.Context(), newReq)
 	if err != nil {
-		respondWithError(err, message, status)
+		return respondWithError(err, message, status)
 	}
 
 	return &ServerResponse{
@@ -82,9 +81,9 @@ func (a *API) StaffSignIn(_ http.ResponseWriter, r *http.Request) *ServerRespons
 		return respondWithError(err, "invalid request body provided", values.BadRequestBody)
 	}
 
-	admin, status, message, err := a.DoStaffLogin(newReq)
+	admin, status, message, err := a.DoStaffLogin(r.Context(), newReq)
 	if err != nil {
-		respondWithError(err, message, status)
+		return respondWithError(err, message, status)
 	}
 
 	return &ServerResponse{
@@ -105,7 +104,7 @@ func (a *API) SuperAdminSignIn(_ http.ResponseWriter, r *http.Request) *ServerRe
 
 	admin, status, message, err := a.DoSuperAdminLogin(newReq)
 	if err != nil {
-		respondWithError(err, message, status)
+		return respondWithError(err, message, status)
 	}
 
 	return &ServerResponse{

@@ -1,0 +1,81 @@
+{{define "subject"}}Welcome to Our Platform!{{end}}
+
+{{define "plainBody"}}
+Welcome to Our Platform!
+
+Dear {{ .Username }},
+
+We're excited to have you join our community. Your account has been successfully created.
+
+Here are a few things you can do:
+
+- Customize your profile.
+- Explore our features and services.
+- Connect with other users.
+
+Feel free to contact us if you have any questions or need assistance.
+
+Best regards,
+The Team
+{{end}}
+
+{{define "htmlBody"}}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Welcome Email</title>
+    <style>
+        /* Styling for the email content */
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            padding: 20px;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background-color: #ffffff;
+            padding: 40px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333333;
+            text-align: center;
+        }
+        p {
+            color: #666666;
+            line-height: 1.6;
+            margin-bottom: 20px;
+        }
+        .button {
+            display: inline-block;
+            padding: 10px 20px;
+            background-color: #007bff;
+            color: #ffffff;
+            text-decoration: none;
+            border-radius: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Welcome to Our Platform!</h1>
+        <p>Dear {{ .Username }},</p>
+        <p>We're excited to have you join our community. Your account has been successfully created.</p>
+        <p>Here are a few things you can do:</p>
+        <ul>
+            <li>Customize your profile.</li>
+            <li>Explore our features and services.</li>
+            <li>Connect with other users.</li>
+        </ul>
+        <p>Feel free to contact us if you have any questions or need assistance.</p>
+        <p>Best regards,<br> The Team</p>
+        <p style="text-align: center;"><a href="#" class="button">Get Started</a></p>
+    </div>
+</body>
+</html>
+{{end}}

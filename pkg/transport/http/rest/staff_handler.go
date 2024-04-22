@@ -2,6 +2,7 @@ package rest
 
 import (
 	"encoding/json"
+	"errors"
 	"github.com/babafemi99/WR/internal/util"
 	"github.com/babafemi99/WR/internal/values"
 	"github.com/babafemi99/WR/pkg/model"
@@ -13,9 +14,9 @@ func (a *API) StaffRoutes() chi.Router {
 	r := chi.NewRouter()
 	r.Use(a.AuthenticateStaff)
 
-	r.Method(http.MethodPost, "settings/staff/change-password/{id}", Handler(a.ChangePasswordStaff))
-	r.Method(http.MethodPost, "/live/{id}", Handler(a.ToggleWeddingLive))
-	r.Method(http.MethodPost, "/offline/{id}", Handler(a.OffWedding))
+	r.Method(http.MethodPatch, "/settings/staff/change-password", Handler(a.ChangePasswordStaff))
+	r.Method(http.MethodPost, "/wedding/live", Handler(a.ToggleWeddingLive))
+	r.Method(http.MethodPatch, "/wedding/offline/{id}", Handler(a.OffWedding))
 
 	return r
 }
@@ -27,7 +28,7 @@ func (a *API) ChangePasswordStaff(_ http.ResponseWriter, r *http.Request) *Serve
 	if err != nil {
 		return respondWithError(err, "invalid request body provided", values.BadRequestBody)
 	}
-	status, message, err := a.ChangeStaffPassword(newReq)
+	status, message, err := a.ChangeStaffPassword(r.Context(), newReq)
 	if err != nil {
 		return respondWithError(err, message, status)
 	}
@@ -40,23 +41,16 @@ func (a *API) ChangePasswordStaff(_ http.ResponseWriter, r *http.Request) *Serve
 }
 
 func (a *API) ToggleWeddingLive(_ http.ResponseWriter, r *http.Request) *ServerResponse {
-	// get link from url
-	wID := chi.URLParam(r, "wid")
-	// verify if link is for today and has not been toggled
-	_, status, message, err := a.VerifyWeddingId(wID)
-	if err != nil {
-		return respondWithError(err, message, status)
-	}
 
 	// get req from body and validate
 	var toggleReq model.ToggleWeddingReq
-	err = json.NewDecoder(r.Body).Decode(&toggleReq)
+	err := json.NewDecoder(r.Body).Decode(&toggleReq)
 	if err != nil {
 		return respondWithError(err, "invalid request body provided", values.BadRequestBody)
 	}
 
 	// set link status to toggled with user details
-	status, message, err = a.ToggleWedding(toggleReq)
+	status, message, err := a.ToggleWedding(r.Context(), toggleReq)
 	if err != nil {
 		return respondWithError(err, status, message)
 	}
@@ -70,10 +64,13 @@ func (a *API) ToggleWeddingLive(_ http.ResponseWriter, r *http.Request) *ServerR
 }
 func (a *API) OffWedding(_ http.ResponseWriter, r *http.Request) *ServerResponse {
 	// get link from url
-	wID := chi.URLParam(r, "wid")
+	wID := chi.URLParam(r, "id")
+	if wID == "nil" {
+		respondWithError(errors.New("invalid wedding id"), "bad request", values.BadRequestBody)
+	}
 
 	// set link status to toggled with user details
-	status, message, err := a.ToggleWeddingOff(wID)
+	status, message, err := a.ToggleWeddingOff(r.Context(), wID)
 	if err != nil {
 		return respondWithError(err, status, message)
 	}

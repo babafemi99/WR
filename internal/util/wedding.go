@@ -2,6 +2,7 @@ package util
 
 import (
 	"crypto/sha256"
+	"encoding/base64"
 	"encoding/hex"
 	"strings"
 	"time"
@@ -54,4 +55,17 @@ func IsSameDayWithToday(t1 time.Time) bool {
 func IsBeforeToday(t1 time.Time) bool {
 	t2 := time.Now()
 	return t1.Before(t2) && !IsSameDayWithToday(t1)
+}
+
+func EncodeCID(cid string) string {
+	encoded := base64.URLEncoding.EncodeToString([]byte(cid))
+	return encoded
+}
+
+func DecodeCID(cid string) (string, error) {
+	decoded, err := base64.URLEncoding.DecodeString(cid)
+	if err != nil {
+		return "", err
+	}
+	return string(decoded), nil
 }

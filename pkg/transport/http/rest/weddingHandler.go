@@ -13,7 +13,7 @@ import (
 func (a *API) WeddingRoutes() chi.Router {
 	weddingRouter := chi.NewRouter()
 
-	weddingRouter.Method(http.MethodPost, "/{wid}", Handler(a.JoinWeddingMeeting))
+	weddingRouter.Method(http.MethodGet, "/{wid}/{code}", Handler(a.JoinWeddingMeeting))
 	weddingRouter.Method(http.MethodPost, "/add-member", Handler(a.AddMember))
 	weddingRouter.Method(http.MethodGet, "/{wid}/members", Handler(a.GetAllMembers))
 	weddingRouter.Method(http.MethodDelete, "/{wid}/{email}", Handler(a.RemoveMember))
@@ -27,9 +27,14 @@ func (a *API) JoinWeddingMeeting(_ http.ResponseWriter, r *http.Request) *Server
 	if wID == "" {
 		return respondWithError(nil, "invalid wedding id", values.BadRequestBody)
 	}
+
+	wCode := chi.URLParam(r, "code")
+	if wCode == "" {
+		return respondWithError(nil, "invalid wedding id", values.BadRequestBody)
+	}
 	// verify id
 
-	weddingDetails, status, message, err := a.VerifyWeddingId(wID)
+	weddingDetails, status, message, err := a.JoinWedding(r.Context(), wID, wCode)
 	if err != nil {
 		return respondWithError(err, message, status)
 	}
@@ -45,6 +50,7 @@ func (a *API) JoinWeddingMeeting(_ http.ResponseWriter, r *http.Request) *Server
 
 func (a *API) LoadWeddingDetails(_ http.ResponseWriter, r *http.Request) *ServerResponse {
 	// get req from body and validate
+
 	var newWeddingReq model.NewWeddingReq
 	err := json.NewDecoder(r.Body).Decode(&newWeddingReq)
 	if err != nil {
@@ -52,7 +58,7 @@ func (a *API) LoadWeddingDetails(_ http.ResponseWriter, r *http.Request) *Server
 	}
 
 	// persist in db
-	_, status, message, err := a.DoPersistWedding(newWeddingReq)
+	wedding, status, message, err := a.DoPersistWedding(r.Context(), newWeddingReq)
 	if err != nil {
 		return respondWithError(err, message, status)
 	}
@@ -62,7 +68,7 @@ func (a *API) LoadWeddingDetails(_ http.ResponseWriter, r *http.Request) *Server
 		Status:     status,
 		Message:    message,
 		StatusCode: util.StatusCode(status),
-		Payload:    message,
+		Payload:    wedding,
 	}
 
 }
@@ -76,7 +82,7 @@ func (a *API) AddMember(_ http.ResponseWriter, r *http.Request) *ServerResponse 
 		return respondWithError(err, "invalid request body provided", values.BadRequestBody)
 	}
 
-	status, message, err := a.DoAddMember(newMember)
+	status, message, err := a.DoAddMember(r.Context(), newMember)
 	if err != nil {
 		return respondWithError(err, message, status)
 	}
@@ -110,7 +116,7 @@ func (a *API) GetAllMembers(_ http.ResponseWriter, r *http.Request) *ServerRespo
 	offset := (page - 1) * pageSize
 	limit := pageSize
 
-	members, err := a.Deps.Repository.GetMembers(wID, offset, limit)
+	members, err := a.Deps.Repository.GetMembers(r.Context(), wID, offset, limit)
 	if err != nil {
 		return nil
 	}
@@ -124,7 +130,6 @@ func (a *API) GetAllMembers(_ http.ResponseWriter, r *http.Request) *ServerRespo
 }
 
 func (a *API) RemoveMember(_ http.ResponseWriter, r *http.Request) *ServerResponse {
-	// get email and wedding id from url
 
 	wID := chi.URLParam(r, "wid")
 	if wID == "" {
@@ -138,7 +143,7 @@ func (a *API) RemoveMember(_ http.ResponseWriter, r *http.Request) *ServerRespon
 
 	// delete the email
 
-	err := a.Deps.Repository.RemoveMember(email, wID)
+	err := a.Deps.Repository.RemoveMember(r.Context(), email, wID)
 	if err != nil {
 		return respondWithError(err, "failed to remove member", values.Error)
 	}

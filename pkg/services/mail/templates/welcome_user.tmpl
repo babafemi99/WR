@@ -1,0 +1,77 @@
+{{define "subject"}}Welcome to Wedding Registry !{{end}}
+
+{{define "plainBody"}}
+Welcome wedding registry!
+
+Dear {{ .Type }},
+
+Your account has been successfully created.
+
+Here are your login credentials:
+Email: {{ .Email }}
+Password: {{ .Password }}
+
+Please use these credentials to log in to our platform.
+
+Best regards,
+The Admin Team
+{{end}}
+
+{{define "htmlBody"}}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Welcome Email</title>
+    <style>
+        /* Styling for the email content */
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            padding: 20px;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background-color: #ffffff;
+            padding: 40px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333333;
+            text-align: center;
+        }
+        p {
+            color: #666666;
+            line-height: 1.6;
+            margin-bottom: 20px;
+        }
+        .button {
+            display: inline-block;
+            padding: 10px 20px;
+            background-color: #007bff;
+            color: #ffffff;
+            text-decoration: none;
+            border-radius: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Welcome onboard !</h1>
+        <p>Dear {{ .Type }},</p>
+        <p>Your  account has been successfully created.</p>
+        <p>Here are your login credentials:</p>
+        <ul>
+            <li><strong>Email:</strong> {{ .Email }}</li>
+            <li><strong>Password:</strong> {{ .Password }}</li>
+        </ul>
+        <p>Please use these credentials to log in to our platform.</p>
+        <p>Best regards,<br> The Admin Team</p>
+    </div>
+</body>
+</html>
+{{end}}

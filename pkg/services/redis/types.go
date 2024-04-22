@@ -1,20 +1,14 @@
 package redis
 
-import (
-	"time"
-)
-
 type AuthSession struct {
-	AccessTokenExpiresAt  time.Time
-	RefreshTokenExpiresAt time.Time
-	Email                 string
-	UserID                string
-	SessionId             string
+	Email     string `json:"email"`
+	UserID    string `json:"user_id"`
+	SessionId string `json:"session_id"`
 	// For of auth session - staff, admin or external entities
 	For string
 }
 
 type ReferenceSession struct {
-	RefreshToken string
-	AccessToken  string
+	RefreshToken string `json:"refresh_token"`
+	AccessToken  string `json:"access_token"`
 }

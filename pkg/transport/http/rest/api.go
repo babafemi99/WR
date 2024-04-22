@@ -49,7 +49,7 @@ func (a *API) setUpServerHandler() http.Handler {
 	mux := chi.NewRouter()
 
 	mux.Use(middleware.RealIP)
-	mux.Use(middleware.Logger)
+	//mux.Use(middleware.Logger)
 	mux.Use(middleware.Recoverer)
 	mux.Use(middleware.Timeout(60 * time.Second))
 	mux.Use(cors.Handler(cors.Options{
@@ -77,7 +77,7 @@ func (a *API) setUpServerHandler() http.Handler {
 
 // Shutdown shuts the core service down
 func (a *API) Shutdown() error {
-	// todo (ore): shut down database
+	a.Deps.Repository.Shutdown(context.TODO())
 
 	err := a.Server.Shutdown(context.Background())
 	if err != nil {

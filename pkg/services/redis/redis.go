@@ -90,13 +90,13 @@ func (s Service) SetAuthSession(ctx context.Context, session AuthSession, refres
 	}
 
 	err := s.Client.Set(ctx, fmt.Sprintf("%s-%s", session.For, session.UserID), b.Bytes(),
-		values.AccessTokenExpiry*time.Minute).Err()
+		values.AccessTokenExpiry*time.Second).Err()
 	if err != nil {
 		return err
 	}
 
 	err = s.Client.Set(ctx, fmt.Sprintf("ref-%s-%s-%s", session.For, session.UserID, refreshToken), b.Bytes(),
-		values.RefreshTokenExpiry*time.Minute).Err()
+		values.RefreshTokenExpiry*time.Second).Err()
 	if err != nil {
 		return err
 	}

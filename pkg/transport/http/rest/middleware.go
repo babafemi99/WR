@@ -6,6 +6,7 @@ import (
 	"github.com/babafemi99/WR/internal/util"
 	"github.com/babafemi99/WR/internal/values"
 	"github.com/babafemi99/WR/pkg/model"
+	"log"
 	"net/http"
 	"strings"
 )
@@ -58,7 +59,7 @@ func (a *API) AuthenticateStaff(next http.Handler) http.Handler {
 }
 
 // AuthenticateAdmin checks if admin token is valid
-func AuthenticateAdmin(next http.Handler) http.Handler {
+func (a *API) AuthenticateAdmin(next http.Handler) http.Handler {
 	fn := func(w http.ResponseWriter, r *http.Request) {
 		authorization := strings.Split(r.Header.Get("Authorization"), " ")
 		if len(authorization) != 2 {
@@ -72,7 +73,16 @@ func AuthenticateAdmin(next http.Handler) http.Handler {
 			return
 		}
 
-		if strings.ToLower(token.Role) != "admin" || strings.ToLower(token.Role) != "super" {
+		if token.Role == "admin" {
+			_, err = a.Deps.Redis.GetAuthSession(r.Context(), token.Role, token.Subject)
+			if err != nil {
+				writeErrorResponse(w, errors.New(values.NotAuthorised), values.NotAuthorised, err.Error())
+				return
+			}
+		}
+
+		if strings.ToLower(token.Role) != "admin" && strings.ToLower(token.Role) != "super" {
+			log.Println(token.Role)
 			writeErrorResponse(w, errors.New(values.NotAuthorised), values.NotAuthorised, " who you ?? you no supposed dey here")
 			return
 		}
@@ -96,7 +106,7 @@ func AuthenticateSuperAdmin(next http.Handler) http.Handler {
 	fn := func(w http.ResponseWriter, r *http.Request) {
 		authorization := strings.Split(r.Header.Get("Authorization"), " ")
 		if len(authorization) != 2 {
-			writeErrorResponse(w, errors.New(values.NotAuthorised), values.NotAuthorised, "not-authorized")
+			writeErrorResponse(w, errors.New(values.NotAuthorised), values.NotAuthorised, "invalid token format")
 			return
 		}
 

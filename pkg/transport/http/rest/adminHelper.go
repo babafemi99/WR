@@ -7,31 +7,34 @@ import (
 	"github.com/babafemi99/WR/internal/util"
 	"github.com/babafemi99/WR/internal/values"
 	"github.com/babafemi99/WR/pkg/model"
+	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
-	"github.com/oklog/ulid/v2"
 	"golang.org/x/crypto/bcrypt"
 	"log"
+	"strings"
 	"time"
 )
 
-func (a *API) DoPersistAdmin(admin model.Admin) (*model.Admin, string, string, error) {
+func (a *API) DoPersistAdmin(ctx context.Context, admin model.Admin) (*model.PersistRes, string, string, error) {
 	// verify admin body
 
 	// check if email already exists
-	exist, err := a.Deps.Repository.EmailExist(admin.Email, admin.Role)
+	exist, err := a.Deps.Repository.EmailExist(ctx, admin.Email, "admin")
 	if exist {
 		return nil, values.Conflict, "admin with this email already exist", errors.New("duplicate resource")
 	}
-	if err != nil {
-		return nil, values.Error, "unable to fetch user details", err
+	if err != nil && !errors.Is(err, pgx.ErrNoRows) {
+		return nil, values.Error, "system error", err
 	}
 
-	admin.Id = ulid.Make()
+	admin.Id = uuid.New()
 	admin.CreatedAt = time.Now()
 	admin.UpdatedAt = time.Now()
 	admin.Status = values.UserDefaultStatus
+	admin.Role = "admin"
 
 	var message, status string
+	var res model.PersistRes
 	err = a.Deps.Repository.RunInTx(context.Background(), func() error {
 
 		// generate temporary password
@@ -43,14 +46,33 @@ func (a *API) DoPersistAdmin(admin model.Admin) (*model.Admin, string, string, e
 			return err
 		}
 
-		err = a.Deps.Repository.PersistAdmin(admin)
+		err = a.Deps.Repository.PersistAdmin(ctx, admin)
 		if err != nil {
 			message = "unable add new admin"
 			status = values.Error
 			return err
 		}
 
+		res.Email = admin.Email
+		res.Password = pass
+
 		// send email to user
+		data := struct {
+			Type     string
+			Email    string
+			Password string
+		}{
+			Type:     "Admin",
+			Email:    res.Email,
+			Password: res.Password,
+		}
+		patterns := []string{"welcome_user.tmpl"}
+		err = a.Deps.IMailer.SendEmail("ooluwa27@gmail.com", nil, data, patterns...)
+		if err != nil {
+			message = "failed to send email"
+			status = values.Failed
+			return err
+		}
 
 		return nil
 	})
@@ -58,17 +80,24 @@ func (a *API) DoPersistAdmin(admin model.Admin) (*model.Admin, string, string, e
 		return nil, status, message, err
 	}
 
-	return &admin, values.Success, "admin added successfully", nil
+	return &res, values.Success, "admin added successfully", nil
 }
 
-func (a *API) DoAdminLogin(req model.LoginReq) (*model.AdminAuthRes, string, string, error) {
+func (a *API) DoAdminLogin(ctx context.Context, req model.LoginReq) (*model.AdminAuthRes, string, string, error) {
 	// validate req
 
 	// fetch user with that email
-	user, err := a.Deps.Repository.FindAdminByEmail(req.Email)
+	user, err := a.Deps.Repository.FindAdminByEmail(ctx, req.Email)
 	if err != nil {
-		log.Println(err, "error")
-		return nil, values.NotAuthorised, "Invalid credentials", err
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, values.NotAuthorised, "Invalid credentials", err
+		}
+		return nil, values.Failed, "system error", err
+	}
+
+	log.Println(user.Status)
+	if strings.ToLower(user.Status) == "blocked" {
+		return nil, values.NotAuthorised, "you have been blocked", errors.New("blocked")
 	}
 
 	// compare password
@@ -83,21 +112,20 @@ func (a *API) DoAdminLogin(req model.LoginReq) (*model.AdminAuthRes, string, str
 		return nil, status, message, err
 	}
 
+	log.Println(tokenArr)
 	// return response
 	return &model.AdminAuthRes{
 		Admin: &user,
 		Auth: model.TokenInfo{
-			Token: tokenArr[0],
-			//TokenExpiryTime:        time.Time{},
-			//RefreshTokenExpiryTime: time.Time{},
-			RefreshToken: tokenArr[2],
+			Token:        tokenArr[0],
+			RefreshToken: tokenArr[1],
 		},
 	}, values.Success, "log in successful", nil
 }
 
-func (a *API) DoBlockAdmin(id string) (string, string, error) {
+func (a *API) DoBlockAdmin(ctx context.Context, id string) (string, string, error) {
 
-	exist, err := a.Deps.Repository.IdExist(id, "admin")
+	exist, err := a.Deps.Repository.IdExist(ctx, id, "admin")
 	if !exist {
 		return values.NotFound, "no admin with this id", errors.New("invalid resource")
 	}
@@ -105,20 +133,37 @@ func (a *API) DoBlockAdmin(id string) (string, string, error) {
 		return values.Error, "unable to fetch user details", err
 	}
 
-	err = a.Deps.Repository.BLockStaff(id)
+	var status, message string
+	err = a.Deps.Repository.RunInTx(ctx, func() error {
+
+		err = a.Deps.Repository.BLockAdmin(ctx, id)
+		if err != nil {
+			status, message = values.Error, "unable to block staff"
+			return err
+		}
+
+		err = a.Deps.Redis.DeleteAuthSession(ctx, []string{fmt.Sprintf("admin-%s", id)})
+		if err != nil {
+			status = values.Error
+			message = "failed to delete staff session"
+			return err
+		}
+		return nil
+	})
 	if err != nil {
-		return values.Error, "unable to block staff", err
+		return status, message, err
 	}
 
 	return values.Success, "blocked staff successfully", nil
 }
 
-func (a *API) DeleteAdmin(id string) (string, string, error) {
-	err := a.Deps.Repository.DeleteAdmin(id)
+func (a *API) DeleteAdmin(ctx context.Context, id string) (string, string, error) {
+
+	err := a.Deps.Repository.DeleteAdmin(ctx, id)
 	if err != nil {
 		return values.Error, "unable to delete staff", err
 	}
-	return values.Success, "blocked staff successfully", nil
+	return values.Success, "deleted staff successfully", nil
 }
 
 func (a *API) ImportWeddingDetails() (string, string, error) {
@@ -126,12 +171,17 @@ func (a *API) ImportWeddingDetails() (string, string, error) {
 	return "", "", nil
 }
 
-func (a *API) ChangeAdminPassword(req model.ChangePasswordReq) (string, string, error) {
+func (a *API) ChangeAdminPassword(ctx context.Context, req model.ChangePasswordReq) (string, string, error) {
 	// verify ChangePasswordReq
 
-	// load admin details
+	// getId from context
+	executor, ok := ctx.Value(values.Executor).(model.Executor)
+	if !ok {
+		return values.Failed, "system error", errors.New("failed to get executor")
+	}
 
-	staff, err := a.Deps.Repository.FindAdminById(req.UserID)
+	// load admin details
+	staff, err := a.Deps.Repository.FindAdminById(ctx, executor.Id)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return values.NotFound, "no admin with this id", errors.New("invalid resource")
@@ -145,9 +195,14 @@ func (a *API) ChangeAdminPassword(req model.ChangePasswordReq) (string, string, 
 		return values.NotAuthorised, "Invalid credentials", err
 	}
 
-	// store new password
+	//encrypt new password
+	hashPassword, err := util.HashPassword([]byte(req.NewPassword))
+	if err != nil {
+		return values.Error, "failed to hash new password", err
+	}
 
-	err = a.Deps.Repository.UpdateAdminPassword(req.UserID, req.NewPassword)
+	// store new password
+	err = a.Deps.Repository.UpdateAdminPassword(ctx, executor.Id, hashPassword)
 	if err != nil {
 		return values.Error, "failed to update password", err
 	}
@@ -155,8 +210,13 @@ func (a *API) ChangeAdminPassword(req model.ChangePasswordReq) (string, string, 
 	return values.Success, "updated password successfully", nil
 }
 
-func (a *API) UpdateAdminPassword(req model.UpdatePasswordReq) (string, string, error) {
-	err := a.Deps.Repository.UpdateStaffPassword(req.UserID, req.Password)
+func (a *API) UpdateAdminPassword(ctx context.Context, req model.UpdatePasswordReq) (string, string, error) {
+	//encrypt new password
+	hashPassword, err := util.HashPassword([]byte(req.Password))
+	if err != nil {
+		return values.Error, "failed to hash new password", err
+	}
+	err = a.Deps.Repository.UpdateAdminPassword(ctx, req.UserID, hashPassword)
 	if err != nil {
 		return values.Error, "failed to update password", err
 	}
